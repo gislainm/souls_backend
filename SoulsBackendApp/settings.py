@@ -9,10 +9,16 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
+import os
 from datetime import timedelta
 from pathlib import Path
 
 from decouple import config
+from dotenv import find_dotenv, load_dotenv
+
+ENV_FILE = find_dotenv()
+if ENV_FILE:
+    load_dotenv(ENV_FILE)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,12 +29,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # configuration for environment variables
-DB_NAME = config("DB_NAME", default="")
-DB_PASSWORD = config("DB_PASSWORD", default="")
-DB_USER = config("DB_USER", default="")
-DB_HOST = config("DB_HOST ", default="")
-DB_PORT = config("DB_PORT", default="")
-SECRET_KEY = config("SECRET_KEY", default="")
+DB_NAME = os.environ.get("DB_NAME")
+DB_PASSWORD = os.environ.get("DB_PASSWORD")
+DB_USER = os.environ.get("DB_USER")
+DB_HOST = os.environ.get("DB_HOST ")
+DB_PORT = os.environ.get("DB_PORT")
+SECRET_KEY = os.environ.get("SECRET_KEY")
+
+# duration for auto-generate oauth code validity in minutes
+OAUTH_CODE_VALID_FOR = os.environ.get("OAUTH_CODE_VALID_FOR")
+
+
+# Add Twilio/SendGrid API Key Variable
+SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -109,6 +122,12 @@ DATABASES = {
     }
 }
 
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "oauth_cache_table",
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators

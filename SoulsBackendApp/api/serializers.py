@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from ..serializers import UserSerializer
+from ..serializers import UserResponseSerializer
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -13,5 +13,5 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     def validate(self, attrs: Dict[str, Any]) -> Dict[str, str]:
         data = super().validate(attrs)
-        user_data = UserSerializer(self.user).data
+        user_data = UserResponseSerializer(self.user).data
         return {"authToken": data, "user": user_data}

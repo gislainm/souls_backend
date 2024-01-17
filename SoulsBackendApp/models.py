@@ -10,8 +10,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(
         default=uuid.uuid4, unique=True, primary_key=True, editable=False
     )
-    name = models.CharField(max_length=200, blank=True)
-    email = models.EmailField(max_length=200, unique=True, blank=True)
+    name = models.CharField(max_length=200)
+    email = models.EmailField(max_length=200, unique=True)
     password = models.CharField(max_length=100, blank=True)
     telephone = models.CharField(max_length=100, blank=True)
     is_admin = models.BooleanField(default=False)
@@ -26,6 +26,17 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = "email"
 
     objects = CustomUserManager()
+
+
+class AttendingUser(models.Model):
+    id = models.UUIDField(
+        default=uuid.uuid4, unique=True, primary_key=True, editable=False
+    )
+    name = models.CharField(max_length=200)
+    is_deleted = models.BooleanField(default=False)
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class Organization(models.Model):
@@ -47,8 +58,15 @@ class SmallGroup(models.Model):
         default=uuid.uuid4, unique=True, primary_key=True, editable=False
     )
     name = models.CharField(max_length=200)
+    leader = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="led_groups",
+    )
     members = models.ManyToManyField(
-        CustomUser, related_name="small_groups", blank=True
+        AttendingUser, related_name="small_groups", blank=True
     )
     organization = models.ForeignKey(
         "Organization", on_delete=models.CASCADE, related_name="small_groups"
@@ -91,7 +109,7 @@ class Attendance(models.Model):
     )
     meeting_date = models.DateField()
     members_present = models.ManyToManyField(
-        CustomUser, related_name="attendances", blank=True
+        AttendingUser, related_name="attendances", blank=True
     )
     id_deleted = models.BooleanField(default=False)
 

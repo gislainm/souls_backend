@@ -10,6 +10,31 @@ class UserSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "email",
+            "password",
+            "telephone",
+            "is_admin",
+            "is_group_leader",
+            "is_deleted",
+        ]
+
+
+class AttendingUserSerializer(serializers.ModelSerializer):
+    class Meta(object):
+        model = models.AttendingUser
+        fields = [
+            "id",
+            "name",
+            "is_deleted",
+        ]
+
+
+class UserResponseSerializer(serializers.ModelSerializer):
+    class Meta(object):
+        model = models.CustomUser
+        fields = [
+            "id",
+            "name",
+            "email",
             "telephone",
             "is_admin",
             "is_group_leader",
@@ -29,6 +54,7 @@ class smallGroupSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
+            "leader",
             "members",
             "organization",
             "meet_day",
