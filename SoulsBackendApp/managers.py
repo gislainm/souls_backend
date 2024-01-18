@@ -2,13 +2,6 @@ from django.contrib.auth.models import BaseUserManager
 
 
 class CustomUserManager(BaseUserManager):
-    # def create_user_attendant(self, name: str, **extra_fields):
-    #     if not name:
-    #         raise ValueError("User must have a name")
-    #     user = self.model(name=name, **extra_fields)
-    #     user.save()
-    #     return user
-
     def create_user_leader(self, name: str, email: str, telephone: str, **extra_fields):
         if not name:
             raise ValueError("User must have a name")
@@ -34,7 +27,7 @@ class CustomUserManager(BaseUserManager):
         if not telephone:
             raise ValueError("User must have a phone number")
         if not password:
-            print('password missing')
+            print("password missing")
             raise TypeError("User must have a password")
         email = self.normalize_email(email)
         user = self.model(

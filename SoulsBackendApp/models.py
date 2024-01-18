@@ -111,7 +111,7 @@ class Attendance(models.Model):
     members_present = models.ManyToManyField(
         AttendingUser, related_name="attendances", blank=True
     )
-    id_deleted = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self) -> str:
         return f"Attendance for {self.group.name} on {self.meeting_date}"

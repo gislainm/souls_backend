@@ -20,9 +20,24 @@ urlpatterns = [
         name="add_small_group_with_existing_leader",
     ),
     path(
-        "add-member/<uuid:group_id>",
+        "group/<uuid:group_id>/add-member",
         views.addSmallGroupMember,
         name="add_small_group_member",
+    ),
+    path(
+        "group/<uuid:group_id>/record-attendance",
+        views.recordAttendance,
+        name="record_attendance",
+    ),
+    path(
+        "organization/<uuid:organization_id>/get-groups",
+        views.getSmallGroups,
+        name="get_small_groups",
+    ),
+    path(
+        "organization/<uuid:organization_id>/get-leaders",
+        views.getOrganizationsGroupLeader,
+        name="get_small_group_leaders",
     ),
     path("api/", include("SoulsBackendApp.api.urls")),
     path("oauth/", include("SoulsBackendApp.oauth.urls")),

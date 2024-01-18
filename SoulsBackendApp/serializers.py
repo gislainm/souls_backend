@@ -67,3 +67,18 @@ class smallGroupSerializer(serializers.ModelSerializer):
         small_group = models.SmallGroup.objects.create(**validated_data)
         small_group.members.set(members_data)
         return small_group
+
+
+class AttendanceSerializer(serializers.ModelSerializer):
+    class Meta(object):
+        model = models.Attendance
+        fields = ["id", "meeting_date", "members_present"]
+
+    def create(self, validated_data):
+        members_present = validated_data.pop("members_present", [])
+        attendance = models.Attendance.objects.create(
+            group=self.context["group"],
+            meeting_date=validated_data["meeting_date"],
+        )
+        attendance.members_present.set(members_present)
+        return attendance

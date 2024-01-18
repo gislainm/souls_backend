@@ -7,11 +7,11 @@ from rest_framework.decorators import (
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import AttendingUser, CustomUser, Organization, SmallGroup
+from .models import CustomUser, Organization, SmallGroup
 from .oauth.utils import token as tokenGenerator
 from .serializers import (
+    AttendanceSerializer,
     AttendingUserSerializer,
     UserResponseSerializer,
     UserSerializer,
@@ -154,53 +154,6 @@ def addSmallGroup(request, organization_id):
 @api_view(["POST"])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
-def addSmallGroupMember(request, group_id):
-    if request.method == "POST":
-        user = request.user
-        if user.is_group_leader:
-            try:
-                small_group = SmallGroup.objects.get(id=group_id)
-                user_serializer = AttendingUserSerializer(data=request.data)
-                if user_serializer.is_valid():
-                    try:
-                        new_user = user_serializer.save()
-                        small_group.members.add(new_user)
-                        return Response(
-                            {
-                                "small_group": smallGroupSerializer(small_group).data,
-                                "message": "User successfully added to the group",
-                            },
-                            status=status.HTTP_202_ACCEPTED,
-                        )
-                    except (ValueError, TypeError) as e:
-                        return Response(
-                            {"error": str(e)},
-                            status=status.HTTP_400_BAD_REQUEST,
-                        )
-                else:
-                    return Response(
-                        {"error": user_serializer.errors},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-
-            except SmallGroup.DoesNotExist:
-                return Response(
-                    {"error": "small group not found"},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
-        else:
-            return Response(
-                {"error": "You do not have permission to create small groups"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-    return Response(
-        {"error": "Invalid HTTP method"}, status=status.HTTP_400_BAD_REQUEST
-    )
-
-
-@api_view(["POST"])
-@authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
 def addSmallGroupWithExistingLeader(request, organization_id):
     """
     - This view create a new small-group in the already existing organization, and gives the small-group a leader.
@@ -259,4 +212,127 @@ def addSmallGroupWithExistingLeader(request, organization_id):
     )
 
 
-# def authenticate_leader(request,leader_id):
+@api_view(["POST"])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def addSmallGroupMember(request, group_id):
+    if request.method == "POST":
+        user = request.user
+        if user.is_group_leader:
+            try:
+                small_group = SmallGroup.objects.get(id=group_id)
+                user_serializer = AttendingUserSerializer(data=request.data)
+                if user_serializer.is_valid():
+                    try:
+                        new_user = user_serializer.save()
+                        small_group.members.add(new_user)
+                        return Response(
+                            {
+                                "small_group": smallGroupSerializer(small_group).data,
+                                "message": "User successfully added to the group",
+                            },
+                            status=status.HTTP_202_ACCEPTED,
+                        )
+                    except (ValueError, TypeError) as e:
+                        return Response(
+                            {"error": str(e)},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+                else:
+                    return Response(
+                        {"error": user_serializer.errors},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+            except SmallGroup.DoesNotExist:
+                return Response(
+                    {"error": "small group not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        else:
+            return Response(
+                {"error": "You do not have permission to create small groups"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+    return Response(
+        {"error": "Invalid HTTP method"}, status=status.HTTP_400_BAD_REQUEST
+    )
+
+
+@api_view(["POST"])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def recordAttendance(request, group_id):
+    group_leader = request.user
+    try:
+        group = SmallGroup.objects.get(id=group_id)
+    except SmallGroup.DoesNotExist:
+        return Response(
+            {"error": "Small group requested doesn't exist"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    if group_leader.is_group_leader:
+        serializer = AttendanceSerializer(data=request.data, context={"group": group})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {
+                    "attendance": serializer.data,
+                    "message": "Attendance successfully recorded",
+                },
+                status=status.HTTP_201_CREATED,
+            )
+        else:
+            return Response(
+                {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+@api_view(["GET"])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def getOrganizationsGroupLeader(request, organization_id):
+    user = request.user
+    if user.is_admin:
+        try:
+            organization = Organization.objects.get(id=organization_id)
+            small_groups = organization.small_groups.all()
+            leaders = [group.leader for group in small_groups]
+            unique_leaders = {leader.email: leader for leader in leaders}.values()
+            serializer = UserResponseSerializer(unique_leaders, many=True)
+            return Response(
+                {"leaders": serializer.data},
+            )
+        except Organization.DoesNotExist:
+            return Response(
+                {"error": "Organization requested doesn't exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+    else:
+        return Response(
+            {"error": "You do not have required permission"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+
+@api_view(["GET"])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def getSmallGroups(request, organization_id):
+    user = request.user
+    if user.is_admin:
+        try:
+            organization = Organization.objects.get(id=organization_id)
+            groups = organization.small_groups.all()
+            serializer = smallGroupSerializer(groups, many=True)
+            return Response({"groups": serializer.data})
+        except Organization.DoesNotExist:
+            return Response(
+                {"error": "Organization requested doesn't exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+    else:
+        return Response(
+            {"error": "You do not have required permission"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
