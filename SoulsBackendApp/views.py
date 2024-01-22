@@ -1,3 +1,8 @@
+from datetime import datetime, time, timedelta
+
+import pytz
+from django.db.models import Count
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import (
     api_view,
@@ -8,7 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from .models import CustomUser, Organization, SmallGroup
+from .models import Attendance, CustomUser, Organization, SmallGroup
 from .oauth.utils import token as tokenGenerator
 from .serializers import (
     AttendanceSerializer,
@@ -273,19 +278,22 @@ def recordAttendance(request, group_id):
         )
     if group_leader.is_group_leader:
         serializer = AttendanceSerializer(data=request.data, context={"group": group})
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {
-                    "attendance": serializer.data,
-                    "message": "Attendance successfully recorded",
-                },
-                status=status.HTTP_201_CREATED,
-            )
-        else:
-            return Response(
-                {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
-            )
+        try:
+            if serializer.is_valid():
+                serializer.save()
+                return Response(
+                    {
+                        "attendance": serializer.data,
+                        "message": "Attendance successfully recorded",
+                    },
+                    status=status.HTTP_201_CREATED,
+                )
+            else:
+                return Response(
+                    {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+                )
+        except ValueError as ve:
+            return Response({"error": str(ve)})
 
 
 @api_view(["GET"])
@@ -322,10 +330,123 @@ def getSmallGroups(request, organization_id):
     user = request.user
     if user.is_admin:
         try:
+            server_current_time = timezone.now()
+            central_timezone = pytz.timezone("America/Chicago")
+            current_time_central = timezone.localtime(
+                timezone.now(), timezone=central_timezone
+            )
+            (
+                current_central_year,
+                current_central_month,
+                current_central_day,
+            ) = current_time_central.date().timetuple()[:3]
+            send_time = datetime(
+                current_central_year,
+                current_central_month,
+                current_central_day,
+                20,
+                00,
+                00,
+            )
+
+            date = current_time_central.date()
+            date_time = datetime.combine(date, send_time.time())
+            non_naive_time = central_timezone.localize(date_time)
+            sender_server_time = timezone.localtime(
+                non_naive_time, timezone=timezone.get_current_timezone()
+            )
+            # current_time_central = timezone.localtime(
+            #     timezone.now(), timezone=central_timezone
+            # )
+            # time_difference = current_time_central.utcoffset().total_seconds()
+            # execution_time_server = server_current_time + timedelta(
+            #     seconds=time_difference
+            # )
+            print(f"time at which the server will send message: {sender_server_time}")
             organization = Organization.objects.get(id=organization_id)
             groups = organization.small_groups.all()
             serializer = smallGroupSerializer(groups, many=True)
             return Response({"groups": serializer.data})
+        except Organization.DoesNotExist:
+            return Response(
+                {"error": "Organization requested doesn't exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+    else:
+        return Response(
+            {"error": "You do not have required permission"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+
+def get_week_range(input_date):
+    # Calculate the number of days between the input date and the nearest Monday
+    days_to_monday = (input_date.weekday() - 0) % 7
+
+    # Calculate the start date (Monday) of the week
+    start_date = input_date - timedelta(days=days_to_monday)
+
+    # Calculate the end date (Sunday) of the week
+    end_date = start_date + timedelta(days=6)
+
+    # Format the start and end dates in the desired format
+    formatted_start_date = start_date.strftime("%m/%d/%Y")
+    formatted_end_date = end_date.strftime("%m/%d/%Y")
+
+    # Return the formatted range
+    return f"{formatted_start_date}-{formatted_end_date}"
+
+
+@api_view(["GET"])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def weeklyAttendanceCount(request, organization_id, year):
+    """
+    This view will be used to return the organization data such as: each group's weekly attendance.
+    The attendance record for each group will have the following format:
+    {"week": 1, "dates": "01/01-01/07", "year": 2023, "total_attending_users": 10},
+    """
+    user = request.user
+    if user.is_admin:
+        try:
+            organization = Organization.objects.get(id=organization_id)
+            groups = organization.small_groups.all()
+            requested_year = int(year)
+            if groups:
+                result = {
+                    "attendance_counts": [],
+                    "message": "Organization's yearly attendance record on a weekly basis",
+                }
+                for group in groups:
+                    group_weekly_attendance = []
+                    queryset = (
+                        Attendance.objects.filter(
+                            group=group, meeting_date__year=requested_year
+                        )
+                        .values("week_number", "meeting_date")
+                        .annotate(total_attended_members=Count("members_present"))
+                    )
+                    for entry in queryset:
+                        week_data = {
+                            "week": entry["week_number"],
+                            "dates": get_week_range(entry["meeting_date"]),
+                            "total_attendend_members": entry["total_attended_members"],
+                        }
+                        group_weekly_attendance.append(week_data)
+                    group_data = {
+                        "group_id": group.id,
+                        "group_name": group.name,
+                        "weekly_attendance_data": group_weekly_attendance,
+                    }
+                    result["attendance_counts"].append(group_data)
+                return Response(result)
+            else:
+                return Response(
+                    {
+                        "attendance_counts": [],
+                        "message": "No small-groups in this organization",
+                    }
+                )
         except Organization.DoesNotExist:
             return Response(
                 {"error": "Organization requested doesn't exist"},

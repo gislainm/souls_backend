@@ -1,3 +1,5 @@
+from datetime import date, datetime, timedelta
+
 from django.contrib.auth.models import BaseUserManager
 
 
@@ -48,3 +50,29 @@ class CustomUserManager(BaseUserManager):
         )
         user.set_password(password)
         user.save()
+
+
+def num_week_of_the_year(provided_date=None):
+    """
+    used to determine which week of the year a specific record is created
+    """
+    if provided_date is None:
+        today = datetime.now().date()
+    else:
+        # date_format = "%Y-%m-%d"
+        # today = datetime.strptime(provided_date, date_format).date()
+        today = provided_date
+    start_year = today.year
+    start_date = date(start_year, 1, 1)
+    end_date = today  # date we want to determine which week of the year it belongs to
+    num_of_weeks = 0
+    current_date = start_date
+
+    while current_date <= end_date:
+        if (
+            current_date.weekday() == 0
+        ):  # every monday we start a new week.adding to the number of weeks that have already passed
+            num_of_weeks += 1
+        current_date += timedelta(days=1)
+
+    return num_of_weeks

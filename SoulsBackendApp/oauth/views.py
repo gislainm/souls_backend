@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from ..emails import test_email
+from ..emails import send_email_to_group_leader, test_email
 from ..models import CustomUser
 from ..serializers import UserResponseSerializer
 from . import forms
@@ -49,6 +49,27 @@ def GenerateOauthCode(request):
         },
         status=status.HTTP_201_CREATED,
     )
+
+
+# generate oauth code for testing the automation of send emails to users
+def GenerateOauthCodeTesting(group_leader):
+    user_email: str = group_leader["email"]
+    user = CustomUser.objects.filter(email=user_email).first()
+
+    if user is None:
+        return "No user found with specified email"
+    if not user.is_group_leader:
+        return "User is not a group leader"
+    oauth_code = code.generate_oauth_code(8)
+    cache.store_oauth_code(user_email, oauth_code, OAUTH_CODE_VALID_FOR * 60)
+    # test_email(name=user.name, oauth_code=oauth_code, record_link="www.google.com")
+    send_email_to_group_leader(
+        name=user.name,
+        email=user.email,
+        oauth_code=oauth_code,
+        record_link="www.google.com",
+    )
+    return "Email successfully send to user"
 
 
 @api_view(["POST"])

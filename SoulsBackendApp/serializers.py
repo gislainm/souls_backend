@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from . import models
+from .managers import num_week_of_the_year
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -70,15 +71,29 @@ class smallGroupSerializer(serializers.ModelSerializer):
 
 
 class AttendanceSerializer(serializers.ModelSerializer):
+    week_number = serializers.SerializerMethodField()
+
     class Meta(object):
         model = models.Attendance
-        fields = ["id", "meeting_date", "members_present"]
+        fields = ["id", "meeting_date", "week_number", "members_present"]
 
     def create(self, validated_data):
         members_present = validated_data.pop("members_present", [])
-        attendance = models.Attendance.objects.create(
+        is_saved = models.Attendance.objects.filter(
             group=self.context["group"],
-            meeting_date=validated_data["meeting_date"],
+            meeting_date__year=validated_data["meeting_date"].year,
+            week_number=num_week_of_the_year(validated_data["meeting_date"]),
         )
-        attendance.members_present.set(members_present)
-        return attendance
+        if is_saved:
+            raise ValueError("Attendance for this week has already been saved")
+        else:
+            attendance = models.Attendance.objects.create(
+                group=self.context["group"],
+                week_number=num_week_of_the_year(validated_data["meeting_date"]),
+                meeting_date=validated_data["meeting_date"],
+            )
+            attendance.members_present.set(members_present)
+            return attendance
+
+    def get_week_number(self, obj):
+        return obj.week_number

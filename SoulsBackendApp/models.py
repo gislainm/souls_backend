@@ -3,7 +3,7 @@ import uuid
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
 
-from .managers import CustomUserManager
+from .managers import CustomUserManager, num_week_of_the_year
 
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
@@ -47,6 +47,7 @@ class Organization(models.Model):
     admin = models.ForeignKey(
         CustomUser, on_delete=models.CASCADE, related_name="admin_of_organization"
     )
+    registration_date = models.DateField(auto_now_add=True)
     is_deleted = models.BooleanField(default=False)
 
     def __str__(self) -> str:
@@ -108,6 +109,7 @@ class Attendance(models.Model):
         SmallGroup, on_delete=models.CASCADE, related_name="attendances"
     )
     meeting_date = models.DateField()
+    week_number = models.IntegerField()
     members_present = models.ManyToManyField(
         AttendingUser, related_name="attendances", blank=True
     )
