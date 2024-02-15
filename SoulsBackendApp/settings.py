@@ -73,7 +73,7 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     "TOKEN_OBTAIN_SERIALIZER": "SoulsBackendApp.api.serializers.MyTokenObtainPairSerializer",
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=3),
 }
 
 MIDDLEWARE = [
@@ -172,4 +172,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # custom user model
 AUTH_USER_MODEL = "SoulsBackendApp.CustomUser"
-CORS_ALLOW_ALL_ORIGINS = True
+
+CORS_ALLOWED_ORIGINS = ["http://localhost:3000"]
+# CORS_ALLOW_ALL_ORIGINS = True
+# SESSION_COOKIE_SAMESITE = 'None'
+CORS_ALLOW_CREDENTIALS = True
+SESSION_COOKIE_SECURE = True

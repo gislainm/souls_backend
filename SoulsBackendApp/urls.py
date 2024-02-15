@@ -6,7 +6,8 @@ from . import views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("login", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    # path("login", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("login", views.login, name="login_user"),
     path("register", views.register, name="regist_user"),
     path("organization/add", views.addOrganization, name="organization_add"),
     path(

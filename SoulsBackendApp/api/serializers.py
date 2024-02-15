@@ -15,3 +15,4 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         data = super().validate(attrs)
         user_data = UserResponseSerializer(self.user).data
         return {"authToken": data, "user": user_data}
+        # return {"access": data["access"], "user": user_data}

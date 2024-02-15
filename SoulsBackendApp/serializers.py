@@ -50,6 +50,7 @@ class organizationSerializer(serializers.ModelSerializer):
 
 
 class smallGroupSerializer(serializers.ModelSerializer):
+    leader = UserResponseSerializer("leader", read_only=True)
     class Meta(object):
         model = models.SmallGroup
         fields = [

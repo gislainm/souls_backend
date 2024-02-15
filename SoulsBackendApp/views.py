@@ -13,6 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
+from .api.serializers import MyTokenObtainPairSerializer
 from .models import Attendance, CustomUser, Organization, SmallGroup
 from .oauth.utils import token as tokenGenerator
 from .serializers import (
@@ -24,10 +25,37 @@ from .serializers import (
     smallGroupSerializer,
 )
 
+# from rest_framework_simplejwt.views import TokenObtainPairView
+
 
 @api_view(["POST"])
 def login(request):
-    return Response({})
+    serializer = MyTokenObtainPairSerializer(data=request.data)
+    if serializer.is_valid():
+        access = serializer.validated_data.get("authToken").get("access")
+        refresh = serializer.validated_data.get("authToken").get("refresh")
+        user = serializer.validated_data.get("user")
+        try:
+            organization = Organization.objects.get(admin=user.get("id"))
+        except Organization.DoesNotExist:
+            organization = None
+        response = Response(
+            {
+                "access": access,
+                "user": user,
+                "organization": organizationSerializer(organization).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+        response.set_cookie(
+            key="refresh",
+            value=refresh,
+            max_age=3 * 24 * 60 * 60,
+            httponly=True,
+            samesite='None',
+            secure=True,
+        )
+        return response
 
 
 @api_view(["POST"])
@@ -38,10 +66,21 @@ def register(request):
         try:
             user = user_manager.create_user_admin(**serializer.validated_data)
             token = tokenGenerator.get_tokens_for_user(user)
-            return Response(
-                {"authToken": token, "user": UserResponseSerializer(user).data},
+            access = token.get("access")
+            refresh = token.get("refresh")
+            response = Response(
+                {"access": access, "user": UserResponseSerializer(user).data},
                 status=status.HTTP_201_CREATED,
             )
+            response.set_cookie(
+                key="refresh",
+                value=refresh,
+                max_age=3 * 24 * 60 * 60,
+                httponly=True,
+                samesite='None',
+                secure=True,
+            )
+            return response
         except (ValueError, TypeError) as e:
             return Response(
                 {"error": str(e)},
@@ -330,39 +369,6 @@ def getSmallGroups(request, organization_id):
     user = request.user
     if user.is_admin:
         try:
-            server_current_time = timezone.now()
-            central_timezone = pytz.timezone("America/Chicago")
-            current_time_central = timezone.localtime(
-                timezone.now(), timezone=central_timezone
-            )
-            (
-                current_central_year,
-                current_central_month,
-                current_central_day,
-            ) = current_time_central.date().timetuple()[:3]
-            send_time = datetime(
-                current_central_year,
-                current_central_month,
-                current_central_day,
-                20,
-                00,
-                00,
-            )
-
-            date = current_time_central.date()
-            date_time = datetime.combine(date, send_time.time())
-            non_naive_time = central_timezone.localize(date_time)
-            sender_server_time = timezone.localtime(
-                non_naive_time, timezone=timezone.get_current_timezone()
-            )
-            # current_time_central = timezone.localtime(
-            #     timezone.now(), timezone=central_timezone
-            # )
-            # time_difference = current_time_central.utcoffset().total_seconds()
-            # execution_time_server = server_current_time + timedelta(
-            #     seconds=time_difference
-            # )
-            print(f"time at which the server will send message: {sender_server_time}")
             organization = Organization.objects.get(id=organization_id)
             groups = organization.small_groups.all()
             serializer = smallGroupSerializer(groups, many=True)
@@ -457,3 +463,38 @@ def weeklyAttendanceCount(request, organization_id, year):
             {"error": "You do not have required permission"},
             status=status.HTTP_403_FORBIDDEN,
         )
+
+
+# server_current_time = timezone.now()
+# central_timezone = pytz.timezone("America/Chicago")
+# current_time_central = timezone.localtime(
+#     timezone.now(), timezone=central_timezone
+# )
+# (
+#     current_central_year,
+#     current_central_month,
+#     current_central_day,
+# ) = current_time_central.date().timetuple()[:3]
+# send_time = datetime(
+#     current_central_year,
+#     current_central_month,
+#     current_central_day,
+#     20,
+#     00,
+#     00,
+# )
+
+# date = current_time_central.date()
+# date_time = datetime.combine(date, send_time.time())
+# non_naive_time = central_timezone.localize(date_time)
+# sender_server_time = timezone.localtime(
+#     non_naive_time, timezone=timezone.get_current_timezone()
+# )
+# current_time_central = timezone.localtime(
+#     timezone.now(), timezone=central_timezone
+# )
+# time_difference = current_time_central.utcoffset().total_seconds()
+# execution_time_server = server_current_time + timedelta(
+#     seconds=time_difference
+# )
+# print(f"time at which the server will send message: {sender_server_time}")
