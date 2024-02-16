@@ -12,6 +12,7 @@ from rest_framework.decorators import (
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .api.serializers import MyTokenObtainPairSerializer
 from .models import Attendance, CustomUser, Organization, SmallGroup
@@ -24,8 +25,6 @@ from .serializers import (
     organizationSerializer,
     smallGroupSerializer,
 )
-
-# from rest_framework_simplejwt.views import TokenObtainPairView
 
 
 @api_view(["POST"])
@@ -52,10 +51,31 @@ def login(request):
             value=refresh,
             max_age=3 * 24 * 60 * 60,
             httponly=True,
-            samesite='None',
+            samesite="None",
             secure=True,
         )
         return response
+
+
+@api_view(["POST"])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def logout(request):
+    refresh_token = request.COOKIES.get("refresh")
+    if refresh_token:
+        try:
+            RefreshToken(refresh_token).blacklist()
+            response = Response(
+                {"message": "Logout Successful"}, status=status.HTTP_200_OK
+            )
+            response.delete_cookie(key="refresh")
+            return response
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    else:
+        return Response(
+            {"error": "No token provided"}, status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 @api_view(["POST"])
@@ -77,7 +97,7 @@ def register(request):
                 value=refresh,
                 max_age=3 * 24 * 60 * 60,
                 httponly=True,
-                samesite='None',
+                samesite="None",
                 secure=True,
             )
             return response

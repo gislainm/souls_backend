@@ -9,6 +9,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
+        token["user_id"] = str(user.id)
         return token
 
     def validate(self, attrs: Dict[str, Any]) -> Dict[str, str]:
