@@ -23,16 +23,50 @@ class CustomTokenRefreshView(TokenRefreshView):
                 user_id = refresh_token.payload["user_id"]
                 user = CustomUser.objects.get(pk=user_id)
                 user_data = UserResponseSerializer(user).data
-                organization = Organization.objects.get(admin=user_data.get("id"))
-                organization_data = organizationSerializer(organization).data
                 access_token = str(refresh_token.access_token)
-                return Response(
-                    {
-                        "access": access_token,
-                        "user": user_data,
-                        "organization": organization_data,
-                    }
-                )
+                if user_data.get("is_admin") and user_data.get("is_group_leader"):
+                    organization = Organization.objects.get(admin=user_data.get("id"))
+                    organization_data = organizationSerializer(organization).data
+                    user_small_groups = user.led_groups.all()
+                    user_small_groups_details = [
+                        {"id": group.id, "name": group.name}
+                        for group in user_small_groups
+                    ]
+                    return Response(
+                        {
+                            "access": access_token,
+                            "user": user_data,
+                            "organization": organization_data,
+                            "groups": user_small_groups_details,
+                        }
+                    )
+                if user_data.get("is_admin"):
+                    organization = Organization.objects.get(admin=user_data.get("id"))
+                    organization_data = organizationSerializer(organization).data
+                    return Response(
+                        {
+                            "access": access_token,
+                            "user": user_data,
+                            "organization": organization_data,
+                        }
+                    )
+                if user_data.get("is_group_leader"):
+                    user_small_groups = user.led_groups.all()
+                    user_small_groups_details = [
+                        {"id": group.id, "name": group.name}
+                        for group in user_small_groups
+                    ]
+                    organization = user_small_groups[0].organization
+                    organization_data = organizationSerializer(organization).data
+                    return Response(
+                        {
+                            "access": access_token,
+                            "user": user_data,
+                            "organization": organization_data,
+                            "groups": user_small_groups_details,
+                        }
+                    )
+
             except Exception as e:
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         else:

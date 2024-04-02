@@ -46,6 +46,11 @@ urlpatterns = [
         views.weeklyAttendanceCount,
         name="get_organization_yearly_attendance_record",
     ),
+    path(
+        "group/<uuid:group_id>/get-members",
+        views.getSmallGroupMembers,
+        name="get_small_group_members",
+    ),
     path("api/", include("SoulsBackendApp.api.urls")),
     path("oauth/", include("SoulsBackendApp.oauth.urls")),
 ]

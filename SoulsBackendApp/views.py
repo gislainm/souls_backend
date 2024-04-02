@@ -290,10 +290,13 @@ def addSmallGroupMember(request, group_id):
                     try:
                         new_user = user_serializer.save()
                         small_group.members.add(new_user)
+                        response_data = smallGroupSerializer(small_group).data
+                        members = AttendingUserSerializer(small_group.members,many=True).data
+                        response_data["members"] = members
                         return Response(
                             {
-                                "small_group": smallGroupSerializer(small_group).data,
-                                "message": "User successfully added to the group",
+                                "small_group": response_data,
+                                "message": "Member successfully added to the group",
                             },
                             status=status.HTTP_202_ACCEPTED,
                         )
@@ -396,6 +399,29 @@ def getSmallGroups(request, organization_id):
         except Organization.DoesNotExist:
             return Response(
                 {"error": "Organization requested doesn't exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+    else:
+        return Response(
+            {"error": "You do not have required permission"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+
+@api_view(["GET"])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def getSmallGroupMembers(request, group_id):
+    user = request.user
+    if user.is_group_leader:
+        try:
+            group = SmallGroup.objects.get(id=group_id)
+            members = group.members.all()
+            serializer = AttendingUserSerializer(members, many=True)
+            return Response({"members": serializer.data})
+        except Organization.DoesNotExist:
+            return Response(
+                {"error": "Group requested doesn't exist"},
                 status=status.HTTP_404_NOT_FOUND,
             )
     else:

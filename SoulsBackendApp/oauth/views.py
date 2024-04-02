@@ -7,7 +7,7 @@ from rest_framework.response import Response
 
 from ..emails import send_email_to_group_leader, test_email
 from ..models import CustomUser
-from ..serializers import UserResponseSerializer
+from ..serializers import UserResponseSerializer, organizationSerializer
 from . import forms
 from .utils import cache, code
 from .utils import token as tokenGenerator
@@ -101,11 +101,23 @@ def VerifyOauthCode(request, user_id):
     user_small_groups_details = [
         {"id": group.id, "name": group.name} for group in user_small_groups
     ]
-    return Response(
+    organization = user_small_groups[0].organization
+    response = Response(
         {
-            "authToken": token,
+            "access": token.get("access"),
             "user": UserResponseSerializer(user).data,
+            "organization": organizationSerializer(organization).data,
             "groups": user_small_groups_details,
         },
         status=status.HTTP_202_ACCEPTED,
     )
+    print(token.get("refresh"))
+    response.set_cookie(
+        key="refresh",
+        value=token.get("refresh"),
+        max_age=3 * 24 * 60 * 60,
+        httponly=True,
+        samesite="None",
+        secure=True,
+    )
+    return response
