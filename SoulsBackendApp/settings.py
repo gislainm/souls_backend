@@ -31,7 +31,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # configuration for environment variables
-DB_URL = os.environ.get("DB_URL")
+DATABASE_URL = os.environ.get("DATABASE_URL")
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
 # duration for auto-generate oauth code validity in minutes
@@ -110,7 +110,7 @@ WSGI_APPLICATION = "SoulsBackendApp.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-DATABASES = {"default": dj_database_url.config(default=DB_URL)}
+DATABASES = {"default": dj_database_url.config(default=DATABASE_URL)}
 
 CACHES = {
     "default": {
