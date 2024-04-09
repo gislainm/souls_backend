@@ -43,9 +43,9 @@ SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["soulsbackend-production.up.railway.app"]
 
 
 # Application definition
