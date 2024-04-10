@@ -24,15 +24,15 @@ class Command(BaseCommand):
         #     .day.at("00:05", pytz.timezone("America/Chicago"))
         #     .do(self.send_weekly_attendance_recording_reminder)
         # )
-        # s = schedule.every().hour.at("45:00").do(self.lighter_reminder_sender)
-        self.lighter_reminder_sender()
+        s = schedule.every().hour.at("30:00").do(self.lighter_reminder_sender)
+        # self.lighter_reminder_sender()
         print(datetime.now())
         # s = schedule.every(2).minutes.do(self.send_weekly_attendance_recording_reminder)
 
-        # while True:
-        #     print(datetime.now(), repr(s))
-        #     schedule.run_pending()
-        #     tm.sleep(120)
+        while True:
+            print(datetime.now(), repr(s))
+            schedule.run_pending()
+            tm.sleep(600)
 
     def lighter_reminder_sender(self):
         self.stdout.write(
