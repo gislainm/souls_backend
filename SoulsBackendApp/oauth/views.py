@@ -67,7 +67,7 @@ def GenerateOauthCodeTesting(group_leader):
         name=user.name,
         email=user.email,
         oauth_code=oauth_code,
-        record_link="www.google.com",
+        record_link="https://ignitesouls.up.railway.app/authorize",
     )
     return "Email successfully send to user"
 
