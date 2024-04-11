@@ -55,6 +55,7 @@ def GenerateOauthCode(request):
 def GenerateOauthCodeTesting(group_leader):
     user_email: str = group_leader["email"]
     user = CustomUser.objects.filter(email=user_email).first()
+    user_data = UserResponseSerializer(user).data
 
     if user is None:
         return "No user found with specified email"
@@ -62,12 +63,13 @@ def GenerateOauthCodeTesting(group_leader):
         return "User is not a group leader"
     oauth_code = code.generate_oauth_code(8)
     cache.store_oauth_code(user_email, oauth_code, OAUTH_CODE_VALID_FOR * 60)
+    user_id = user_data.get("id")
     # test_email(name=user.name, oauth_code=oauth_code, record_link="www.google.com")
     send_email_to_group_leader(
         name=user.name,
         email=user.email,
         oauth_code=oauth_code,
-        record_link="https://ignitesouls.up.railway.app/authorize",
+        record_link="https://ignitesouls.up.railway.app/authorize/%s" % user_id,
     )
     return "Email successfully send to user"
 
