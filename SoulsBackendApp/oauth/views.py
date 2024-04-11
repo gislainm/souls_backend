@@ -27,6 +27,7 @@ def GenerateOauthCode(request):
     form_data = code_form.cleaned_data
     user_email: str = form_data["email"]
     user = CustomUser.objects.filter(email=user_email).first()
+    user_data = UserResponseSerializer(user).data
 
     if user is None:
         return Response(
@@ -40,7 +41,12 @@ def GenerateOauthCode(request):
         )
     oauth_code = code.generate_oauth_code(8)
     cache.store_oauth_code(user.email, oauth_code, OAUTH_CODE_VALID_FOR * 60)
-    test_email(name=user.name, oauth_code=oauth_code, record_link="www.google.com")
+    user_id = user_data.get("id")
+    test_email(
+        name=user.name,
+        oauth_code=oauth_code,
+        record_link="https://ignitesouls.up.railway.app/authorize/%s" % user_id,
+    )
 
     return Response(
         {
