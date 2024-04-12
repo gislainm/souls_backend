@@ -68,7 +68,9 @@ def GenerateOauthCodeTesting(group_leader):
     if not user.is_group_leader:
         return "User is not a group leader"
     oauth_code = code.generate_oauth_code(8)
-    cache.store_oauth_code(user_email, oauth_code, OAUTH_CODE_VALID_FOR * 60)
+    cache.store_oauth_code(
+        user_email, oauth_code, OAUTH_CODE_VALID_FOR * 60 * 24 * 3
+    )
     user_id = user_data.get("id")
     # test_email(name=user.name, oauth_code=oauth_code, record_link="www.google.com")
     send_email_to_group_leader(
