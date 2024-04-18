@@ -163,7 +163,11 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # custom user model
 AUTH_USER_MODEL = "SoulsBackendApp.CustomUser"
 
-CORS_ALLOWED_ORIGINS = ["http://localhost:3000", "https://ignitesouls.up.railway.app"]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "https://ignitesouls.up.railway.app",
+    "https://www.ignitesouls.com",
+]
 # CORS_ALLOW_ALL_ORIGINS = True
 # SESSION_COOKIE_SAMESITE = 'None'
 CORS_ALLOW_CREDENTIALS = True

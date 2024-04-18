@@ -45,7 +45,7 @@ def GenerateOauthCode(request):
     test_email(
         name=user.name,
         oauth_code=oauth_code,
-        record_link="https://ignitesouls.up.railway.app/authorize/%s" % user_id,
+        record_link="https://ignitesouls.com/authorize/%s" % user_id,
     )
 
     return Response(
@@ -77,7 +77,7 @@ def GenerateOauthCodeTesting(group_leader):
         name=user.name,
         email=user.email,
         oauth_code=oauth_code,
-        record_link="https://ignitesouls.up.railway.app/authorize/%s" % user_id,
+        record_link="https://ignitesouls.com/authorize/%s" % user_id,
     )
     return "Email successfully send to user"
 
